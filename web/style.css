@@ -1,0 +1,209 @@
+/* ===== 顏色與字型：集中寫在這裡，之後想換顏色只要改這一區 ===== */
+:root {
+  --green: #2f5d50;        /* 主色：深綠 */
+  --green-light: #e4ece7;  /* 主色的淺色，用在標籤背景 */
+  --bg: #f6f5f0;           /* 頁面背景：偏暖的米白 */
+  --card: #ffffff;         /* 卡片背景 */
+  --text: #1f2a24;         /* 主要文字 */
+  --muted: #6b7468;        /* 次要文字（灰綠） */
+  --line: #e2e0d8;         /* 邊框線 */
+  --radius: 12px;          /* 圓角大小 */
+  /* 字型用電腦內建的，不從網路下載，老師電腦沒網路也不會跑版 */
+  font-family: "Noto Sans TC", "Microsoft JhengHei", "PingFang TC", sans-serif;
+}
+
+/* ===== 基本設定 ===== */
+* { box-sizing: border-box; }   /* 寬度計算包含邊框和內距，排版比較直覺 */
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+}
+
+/* 內容最寬 1100px，置中，左右留白 */
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+/* ===== 標題區 ===== */
+.header {
+  background: var(--green);
+  color: #fff;
+  padding: 40px 0 32px;
+}
+.header h1 {
+  margin: 0;
+  font-size: 2rem;
+  letter-spacing: 0.05em;
+}
+.subtitle { margin: 4px 0 0; opacity: 0.85; }
+.summary  { margin: 12px 0 20px; font-size: 0.9rem; opacity: 0.75; }
+
+.search {
+  width: 100%;
+  max-width: 560px;
+  padding: 12px 16px;
+  font-size: 1rem;
+  border: none;
+  border-radius: var(--radius);
+  outline: none;
+}
+.search:focus { box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.4); }
+
+/* ===== 卡片網格 ===== */
+.count { color: var(--muted); font-size: 0.9rem; margin: 20px 0 12px; }
+
+/* 自動排列：每張卡片至少 220px 寬，空間夠就一排放多張 */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 20px;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;              /* 讓照片的角也是圓的 */
+  cursor: pointer;               /* 滑鼠移上去變成手指，表示可以點 */
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.card:focus-visible { outline: 3px solid var(--green); outline-offset: 2px; }
+/* 滑鼠移上去時卡片微微浮起 */
+.card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+}
+
+.card img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;           /* 所有照片統一 4:3，排起來才整齊 */
+  object-fit: cover;             /* 照片比例不同時自動裁切，不會變形 */
+  background: var(--green-light);/* 照片還沒載入時先顯示淺綠色 */
+}
+
+.card-body { padding: 12px 14px 14px; }
+
+.card h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+.sci {
+  margin: 0;
+  color: var(--muted);
+  font-style: italic;            /* 學名慣例用斜體 */
+  font-size: 0.85rem;
+}
+
+.tag {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 2px 8px;
+  background: var(--green-light);
+  color: var(--green);
+  border-radius: 999px;
+  font-size: 0.75rem;
+}
+
+.meta {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+.credit {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 0.7rem;
+  white-space: nowrap;           /* 標示文字太長就用 … 截掉 */
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ===== 其他 ===== */
+.empty { text-align: center; color: var(--muted); padding: 40px 0; }
+
+.more-wrap { text-align: center; margin: 32px 0; }
+.more {
+  padding: 10px 28px;
+  font-size: 1rem;
+  color: var(--green);
+  background: transparent;
+  border: 1.5px solid var(--green);
+  border-radius: 999px;
+  cursor: pointer;
+}
+.more:hover { background: var(--green); color: #fff; }
+
+/* ===== 詳細視窗 ===== */
+.detail {
+  width: min(640px, calc(100% - 32px));  /* 最寬 640px，手機上左右各留 16px */
+  max-height: calc(100% - 48px);
+  padding: 0;
+  border: none;
+  border-radius: var(--radius);
+  overflow-y: auto;                       /* 內容太長可以捲動 */
+  color: var(--text);
+}
+.detail::backdrop { background: rgba(20, 30, 25, 0.6); }  /* 視窗後面的暗色遮罩 */
+
+.detail img {
+  display: block;
+  width: 100%;
+  max-height: 420px;
+  object-fit: cover;
+  background: var(--green-light);
+}
+.detail-body { padding: 20px 24px 24px; }
+.detail h2 { margin: 0; font-size: 1.5rem; }
+
+.close {
+  position: absolute;            /* 疊在照片右上角 */
+  top: 12px;
+  right: 12px;
+  width: 40px;
+  height: 40px;
+  font-size: 1.5rem;
+  line-height: 1;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.45);
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  z-index: 1;
+}
+
+/* 分類、日期、地點：左邊標題、右邊內容 */
+.info {
+  display: grid;
+  grid-template-columns: 3em 1fr;
+  gap: 6px 12px;
+  margin: 16px 0;
+  font-size: 0.9rem;
+}
+.info dt { color: var(--muted); }
+.info dd { margin: 0; }
+
+.source { color: var(--green); font-size: 0.9rem; }
+
+.help {
+  margin-top: 20px;
+  padding: 16px 18px;
+  background: var(--green-light);
+  border-radius: var(--radius);
+}
+.help h3 { margin: 0 0 8px; color: var(--green); font-size: 1.05rem; }
+.help p { margin: 0; font-size: 0.95rem; }
+.help .help-note { margin-top: 10px; color: var(--muted); font-size: 0.8rem; }
+
+.footer {
+  border-top: 1px solid var(--line);
+  padding: 24px 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+.footer p { margin: 4px 0; }
