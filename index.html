@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <!-- 讓手機上也能正常縮放 -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>台灣鳥類觀察</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- 最上方標題區 -->
+  <header class="header">
+    <div class="container">
+      <h1>台灣鳥類觀察</h1>
+      <p class="subtitle">最近在台灣被拍到的鳥，資料來自 iNaturalist</p>
+      <p class="summary" id="summary"></p>
+
+      <!-- 搜尋框：輸入時 script.js 會即時篩選卡片 -->
+      <input
+        type="search"
+        id="search"
+        class="search"
+        placeholder="搜尋鳥名、學名或縣市，例如：白頭翁、臺北市"
+        autocomplete="off"
+      >
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- 顯示目前有幾筆符合搜尋 -->
+    <p class="count" id="count"></p>
+
+    <!-- 卡片會由 script.js 放進這裡 -->
+    <div class="grid" id="grid"></div>
+
+    <!-- 搜尋不到時顯示 -->
+    <p class="empty" id="empty" hidden>找不到符合的鳥，換個關鍵字試試看。</p>
+
+    <!-- 一次只顯示一部分，按了再多顯示，避免一次載入太多照片 -->
+    <div class="more-wrap">
+      <button class="more" id="more">顯示更多</button>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <p>資料來源：iNaturalist 研究級觀察紀錄，照片版權屬各攝影者，依其 CC 授權標示。</p>
+      <p>數字代表「觀察紀錄數」，會受到拍攝者分布影響，不等於野外族群數量。</p>
+    </div>
+  </footer>
+
+  <!-- 詳細視窗：點卡片時打開，內容由 script.js 填入 -->
+  <dialog class="detail" id="detail">
+    <button class="close" id="close" aria-label="關閉">×</button>
+    <img id="detail-photo" alt="">
+    <div class="detail-body">
+      <h2 id="detail-name"></h2>
+      <p class="sci" id="detail-sci"></p>
+      <dl class="info">
+        <dt>分類</dt><dd id="detail-taxon"></dd>
+        <dt>日期</dt><dd id="detail-date"></dd>
+        <dt>地點</dt><dd id="detail-place"></dd>
+        <dt>照片</dt><dd id="detail-credit"></dd>
+      </dl>
+      <a id="detail-link" class="source" target="_blank" rel="noopener">在 iNaturalist 查看原始紀錄 ↗</a>
+
+      <!-- 救傷提示：之後依「目」顯示不同內容，目前先放通用建議 -->
+      <section class="help">
+        <h3>遇到牠怎麼辦？</h3>
+        <p id="detail-help"></p>
+        <p class="help-note">以上為一般性整理，僅供參考。遇到受傷或落地的鳥，請聯絡當地動物救傷單位或縣市政府動保機關。</p>
+      </section>
+    </div>
+  </dialog>
+
+  <!-- 先載入資料（export.py 產生的），再載入程式，順序不能顛倒 -->
+  <script src="data.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
