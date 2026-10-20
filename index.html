@@ -57,6 +57,8 @@
     <div class="detail-body">
       <h2 id="detail-name"></h2>
       <p class="sci" id="detail-sci"></p>
+      <!-- 類群標籤：只有屬於第二層類群的鳥才顯示 -->
+      <span class="group-tag" id="group-tag" hidden></span>
       <dl class="info">
         <dt>分類</dt><dd id="detail-taxon"></dd>
         <dt>日期</dt><dd id="detail-date"></dd>
@@ -65,11 +67,65 @@
       </dl>
       <a id="detail-link" class="source" target="_blank" rel="noopener">在 iNaturalist 查看原始紀錄 ↗</a>
 
-      <!-- 救傷提示：之後依「目」顯示不同內容，目前先放通用建議 -->
-      <section class="help">
-        <h3>遇到牠怎麼辦？</h3>
-        <p id="detail-help"></p>
-        <p class="help-note">以上為一般性整理，僅供參考。遇到受傷或落地的鳥，請聯絡當地動物救傷單位或縣市政府動保機關。</p>
+      <!-- 遇到牠怎麼辦？文字內容都放在 script.js 的 SITUATIONS 和 GROUP_NOTES，這裡只放位置 -->
+      <section class="help" aria-labelledby="help-title">
+        <h3 id="help-title">遇到牠怎麼辦？</h3>
+
+        <!-- 黃色框（第二層）：每隻鳥最多一個，不屬於任何類群就隱藏 -->
+        <div class="group-box" id="group-box" hidden>
+          <p class="group-box-title">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l9 16H3z"></path><path d="M12 10v4"></path><path d="M12 17h.01"></path></svg>
+            <span id="group-box-title"></span>
+          </p>
+          <ul id="group-box-list"></ul>
+        </div>
+
+        <!-- 先看牠是哪一種 -->
+        <div class="pick-head">
+          <div>
+            <p class="pick-title">先看牠是哪一種</p>
+            <p class="pick-sub">點選卡片看做法</p>
+          </div>
+          <button class="id-toggle" id="id-toggle" type="button" aria-expanded="false" aria-controls="id-table">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+            <span id="id-toggle-label">怎麼分辨？看詳細特徵</span>
+          </button>
+        </div>
+
+        <!-- 三張卡片（切換鈕），由 script.js 依 SITUATIONS 產生 -->
+        <div class="pick-cards" id="pick-cards"></div>
+        <p class="pick-hint" id="pick-hint"></p>
+
+        <!-- 詳細特徵對照表，由 script.js 依 SITUATIONS 產生 -->
+        <div class="id-table-wrap" id="id-table" hidden></div>
+
+        <!-- 選中卡片的做法：沒選時隱藏、不佔空間 -->
+        <div class="advice" id="advice" hidden></div>
+
+        <!-- 聯絡列 -->
+        <div class="contact">
+          <div class="contact-row">
+            <p class="contact-main">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"></path></svg>
+              <span>需要幫忙？撥</span>
+              <a class="phone-big" href="tel:0800000930">0800-000-930</a>
+              <span class="contact-note">林保署 24 小時、免付費</span>
+            </p>
+            <button class="link-btn" id="phones-toggle" type="button" aria-expanded="false" aria-controls="phones">其他電話</button>
+          </div>
+          <p class="phones" id="phones" hidden>
+            <span><a href="tel:1999">1999</a> 縣市專線</span>
+            <span><a href="tel:1959">1959</a> 動保專線</span>
+            <a href="https://www.bird.org.tw/basicpage/117" target="_blank" rel="noopener">查各縣市救傷單位 ↗</a>
+          </p>
+        </div>
+
+        <!-- 免責小字與資料來源 -->
+        <p class="disclaimer">
+          <span>本區為一般性整理，請以專業救傷單位指示為準。</span>
+          <button class="link-btn" id="sources-toggle" type="button" aria-expanded="false" aria-controls="sources">查看資料來源</button>
+        </p>
+        <ul class="sources" id="sources" hidden></ul>
       </section>
     </div>
   </dialog>
