@@ -44,29 +44,448 @@ function cardHTML(bird) {
 }
 
 
-// ===== 詳細視窗 =====
+// ============================================================
+// 遇到牠怎麼辦？內容
+// 文字全部來自「階段二交接_救傷內容.md」的第一層、第二層定稿（可縮短，不新增）
+// 每一段後面的 sources 是用到的來源編號，對應下方 SOURCES
+// ============================================================
+
+// ----- 第一層：分辨提示＋三種情境（每隻鳥都顯示）-----
+const SITUATIONS = {
+  // 分辨提示：卡片上的短說明、「分不出來時」、詳細特徵對照表
+  hint: {
+    unsure: "分不出來時：先放到附近高處，再聯絡救傷單位。",
+    table: {
+      columns: ["雛鳥", "幼鳥", "成鳥"],
+      rows: [
+        ["羽毛", "光禿無毛，或只有絨毛、羽毛沒長齊", "羽毛大致長齊，可能還夾雜絨毛；尾羽短", "體型和羽色都已長成"],
+        ["站立和移動", "腳沒力氣，站不起來", "會跳、會拍翅膀，但飛不遠", "正常會飛；待在地上不飛走通常有狀況"],
+        ["嘴角", "黃白色", "仍是黃白色", "—"],
+        ["眼睛和體型", "眼睛可能還沒張開；比親鳥小很多", "眼睛張開；和親鳥差不多或略小", "和親鳥一樣"],
+      ],
+    },
+    sources: ["S1", "S8", "S9", "S12"],
+  },
+
+  chick: {
+    name: "雛鳥",
+    short: "沒有毛或只有絨毛，站不穩",
+    lead: "看得到巢就放回去，找不到就打電話",
+    items: [
+      "沒受傷又看得到鳥巢，就盡快放回巢中，並確認是牠的巢。",
+      "找不到巢或巢太高很常見，請打電話給救傷單位，描述外觀和行為請他們判斷。",
+      "巢被破壞、受傷或親鳥已死亡，送野鳥救傷單位。",
+      "人碰過不會被拋棄：鳥比較注重聲音和外型，不靠氣味。",
+    ],
+    sources: ["S1", "S7", "S8", "S2", "S24", "S4", "S13", "S3"],
+  },
+
+  fledgling: {
+    name: "幼鳥",
+    short: "已長羽毛，會跳但飛不遠",
+    lead: "多半是在學飛，先退遠觀察，不要撿走",
+    items: [
+      "最常被撿到的就是幼鳥。飛一小段又掉下來是在學飛，在地上待幾天是正常的。",
+      "有活力、沒受傷、環境安全：退遠一點，讓親鳥回來餵。",
+      "位置危險時，放到附近高處（樹枝、牆上），留在聽得到叫聲的範圍內。",
+      "離開一段時間再回來看（台北市野鳥學會建議約半小時）。親鳥沒帶走或牠精神不好，送救傷單位。",
+      "人碰過不會被拋棄。",
+    ],
+    sources: ["S1", "S2", "S7", "S8", "S9", "S12", "S24", "S4", "S13"],
+  },
+
+  injured: {
+    name: "受傷或生病",
+    short: "有傷口、沒活力，或成鳥待在地上不飛走",
+    lead: "保暖、安靜、別餵食，盡快聯絡救傷單位",
+    note: "成鳥正常會飛；待在地上不飛走，多半是受傷或生病。",
+    columns: [
+      {
+        title: "判斷",
+        items: [
+          "先顧自己的安全，車多時別勉強。",
+          "徵兆：外傷或出血、撞擊、羽毛蓬鬆沒活力、摸起來比手冷、呼吸急促。",
+          "嘴和爪子可能傷人，沒把握就直接打電話。",
+        ],
+      },
+      {
+        title: "安置",
+        items: [
+          "戴手套，用毛巾連頭輕輕蓋住再抱起。",
+          "放進打洞紙箱，底部鋪揉皺報紙，放在陰暗安靜處。",
+          "寶特瓶裝溫水包布保暖，與鳥保持距離。",
+          "不要一直打開箱子看。",
+        ],
+      },
+      {
+        title: "不要做",
+        items: [
+          "不要急著餵食，可能有內出血。",
+          "不要灌水，水可能嗆進肺裡；箱子裡也不要放食物和水。",
+          "不要用塑膠盒或塑膠袋裝。",
+          "不要自己養：有些野鳥是保育類，依《野生動物保育法》不得飼養。",
+        ],
+      },
+    ],
+    footer: "盡快送醫；處理完用肥皂洗手。",
+    sources: ["S1", "S7", "S8", "S9", "S10", "S11", "S23", "S25", "S14", "S15", "S16"],
+  },
+};
+
+// 三張卡片的順序
+const SITUATION_ORDER = ["chick", "fledgling", "injured"];
+
+
+// ----- 第二層：類群注意事項（黃色框，每隻鳥最多一個）-----
+// match(bird) 回傳 true 代表這隻鳥屬於這個類群
+// title(bird) 是黃色框標題；items 每一條可以有 bold（粗體開頭）和 onlyIf（只對特定的鳥顯示）
+const GROUP_NOTES = {
+  raptor: {
+    label: "猛禽",
+    match: (bird) => ["鷹形目", "隼形目", "鴞形目"].includes(bird.order),
+    title: (bird) => `${bird.name}屬於猛禽，請特別注意`,
+    items: [
+      { text: "常見的猛禽如鳳頭蒼鷹、黑鳶、領角鴞都是保育類，不能自己飼養。" },
+      { bold: "不要自己抓。", text: "猛禽的爪子有力，處理需要專業；請拍照、記下地點，直接通報。" },
+      {
+        text: "貓頭鷹幼鳥落巢很常見，牠們會自己慢慢跳回樹枝。請在附近觀察，別讓貓狗、車輛靠近，不要撿走。",
+        onlyIf: (bird) => bird.order === "鴞形目",
+      },
+    ],
+    sources: ["S17", "S18", "S19", "S6", "S20", "S14"],
+  },
+
+  heron: {
+    label: "鷺鷥類",
+    match: (bird) => bird.family === "鷺科",
+    title: (bird) => `${bird.name}屬於鷺鷥類，請特別注意`,
+    items: [
+      { bold: "不要自己抓。", text: "鷺鷥類的嘴又長又尖，受驚時會朝人的臉和眼睛啄；請拍照、記下地點，直接通報。" },
+      {
+        text: "黑冠麻鷺不怕人，常在公園、校園草地上走動找蚯蚓，還會伸長脖子靜止不動來偽裝。這些都是正常行為，不代表受傷。",
+        onlyIf: isNightHeron,
+      },
+    ],
+    // 只在黑冠麻鷺的「受傷或生病」區塊多加一句
+    adultNote: {
+      text: "但黑冠麻鷺本來就常在草地上走動、靜止不動，請先看上方黃色框。",
+      onlyIf: isNightHeron,
+    },
+    sources: ["S23", "S22", "S21", "S26", "S27", "S28"],
+  },
+
+  precocial: {
+    label: "早熟型水鳥",
+    // iNaturalist 的中文科名是「鴨科」；「雁鴨科」一起列，以防擴容後出現
+    match: (bird) => ["秧雞科", "長腳鷸科", "鴴科", "鷸科", "鴨科", "雁鴨科"].includes(bird.family),
+    title: () => "毛茸茸、會跟著親鳥走的水鳥寶寶（紅冠水雞、高蹺鴴等）",
+    items: [
+      { text: "這類寶寶一出生就有絨毛、會走，跟著親鳥找食物，本來就不待在巢裡。下方的分辨提示和「放回巢中」都不適用。" },
+      { bold: "不要撿走。", text: "牠們要跟著親鳥才知道吃什麼。請保持距離、不要驚擾，親鳥通常就在附近。" },
+      { text: "如果已經撿起來了，就放回原地附近的地面或水邊，然後立刻離開。" },
+      { text: "牠們很脆弱，不要摸、不要逗弄。確定附近沒有親鳥，或牠受傷了，就放進紙箱保持溫暖安靜，再聯絡救傷單位。" },
+    ],
+    sources: ["S1", "S29", "S30", "S9", "S12", "S31", "S32", "S33"],
+  },
+
+  pigeon: {
+    label: "鴿子",
+    // 學名開頭是 Columba livia（含家鴿亞種 Columba livia domestica）
+    match: (bird) => (bird.sci || "").startsWith("Columba livia"),
+    title: (bird) => `${bird.name}屬於鴿子，請特別注意`,
+    items: [
+      { text: "家鴿不是野鳥，野鳥學會不受理，請洽各地動保單位。" },
+    ],
+    sources: ["S1"],
+  },
+};
+
+function isNightHeron(bird) {
+  return bird.sci === "Gorsachius melanolophus";
+}
+
+// 找出這隻鳥屬於哪個類群；依序比對，回傳第一個符合的，所以最多一個黃色框
+function findGroup(bird) {
+  return Object.values(GROUP_NOTES).find((group) => group.match(bird)) || null;
+}
+
+
+// ----- 資料來源（編號對應交接檔的來源清單）-----
+const SOURCES = {
+  S1:  ["台北市野鳥學會《伸出援手前，先瞭解牠》（2013）", "https://conservation.forest.gov.tw/File.aspx?fno=65476"],
+  S2:  ["公視新聞〈春末初夏幼鳥成長 掉落地面先觀察〉（2018）", "https://news.pts.org.tw/article/390428"],
+  S6:  ["台灣猛禽研究會：救傷流程", "https://raptor.org.tw/rescue/procedure"],
+  S7:  ["泛科學〈在路上遇到受傷野鳥該怎麼辦？〉（2019）", "https://www.cw.com.tw/article/5096160"],
+  S8:  ["NOWnews：撿到小鳥怎麼辦（野生動物急救站，2017）", "https://www.nownews.com/news/20170714/2588861"],
+  S9:  ["聯合報：發現落單幼雛鳥別急著帶走（花蓮縣府）", "https://udn.com/news/story/7470/8764380"],
+  S10: ["野生動物保育法", "https://laws.gov.taipei/law/LawSearch/LawArticleContent/FL014500"],
+  S11: ["法律百科：網路買賣寵物，是否違法？野生動物篇", "https://www.legis-pedia.com/article/environment-hygiene/670"],
+  S12: ["新頭殼：新北市動保處談落巢幼雛鳥（2022）", "https://newtalk.tw/news/view/2022-05-28/762123"],
+  S17: ["中央社：台中潭子新田步道猛禽出沒（2024）", "https://www.cna.com.tw/news/aloc/202405200311.aspx"],
+  S18: ["新頭殼：新北瑞芳領角鴞誤闖民宅（2025）", "https://newtalk.tw/news/view/2025-09-01/991016"],
+  S19: ["工商時報：二級保育鳳頭蒼鷹現蹤台東關山（2026）", "https://www.ctee.com.tw/news/20260117700460-431401"],
+  S20: ["農業部：領角鴞落巢幼鳥", "https://www.moa.gov.tw/ws.php?id=2501743"],
+  S21: ["新頭殼：新北動保處談黑冠麻鷺（2022）", "https://newtalk.tw/news/view/2022-03-08/720160"],
+  S22: ["公視：高雄黑冠麻鷺救傷", "https://news.pts.org.tw/article/775226"],
+  S23: ["野生動物救傷：停、看、聽（改寫自野生動物急救站）", "https://roadkill.tw/article/30584"],
+  S24: ["中華民國野鳥學會：全國野鳥救傷諮詢＆政府單位通訊錄", "https://www.bird.org.tw/basicpage/117"],
+  S25: ["野灣野生動物保育協會：救援流程", "https://www.wildonetaiwan.org/rescue"],
+  S29: ["國立自然科學博物館：探索新世界的紅冠水雞", "https://www.nmns.edu.tw/ch/learn/museum-education/naturalist/scienceimages/detail/SciencePhotography-07060"],
+  S30: ["自由時報：高雄永安濕地高蹺鴴育雛", "https://news.ltn.com.tw/news/life/breakingnews/5508300"],
+  S3:  ["Audubon: What to Do With a Baby Bird", "https://www.audubon.org/news/what-do-baby-bird"],
+  S4:  ["RSPB: Who should I call if I am concerned about a bird?", "https://www.rspb.org.uk/birds-and-wildlife/if-you-find-an-injured-bird"],
+  S13: ["Cornell Lab: I found a baby bird. What do I do?", "https://www.allaboutbirds.org/news/i-found-a-baby-bird-what-do-i-do/"],
+  S14: ["Tufts Wildlife Clinic: Sick or Injured Birds of Prey", "https://vet.tufts.edu/what-do-if-you-found-sick-or-injured-birds-prey"],
+  S15: ["The Raptor Trust: Found an injured or orphaned wild bird", "https://www.theraptortrust.org/faqs/what-to-do-if-you-have-found-a-bird"],
+  S16: ["Carolina Raptor Center: I found an injured animal", "https://carolinaraptorcenter.org/injured-animal/"],
+  S26: ["Maine IFW: How to help an injured heron safely", "https://www.maine.gov/ifw/blogs/maine-heron-observation-network/how-help-injured-heron-safely"],
+  S27: ["KARE 11：明尼蘇達野生動物復健中心談鷺鷥救援", "https://kare11.com/article/news/local/breaking-the-news/rescue-efforts-end-very-differently-for-loon-heron-injured-fishing-line-hooks/89-2d8668ce-11ee-4f43-bdea-920ddc2edd4d"],
+  S28: ["Denver Gazette：博爾德警局救援大藍鷺", "https://denvergazette.com/outtherecolorado/news/watch-your-eyes-crews-rescue-injured-irritated-bird-of-prey/article_b8be953a-24bd-11ee-ab36-2728fc4a5fcc.html"],
+  S31: ["Celebrate Urban Birds (Cornell Lab): baby Killdeer, duckling or gosling", "https://celebrateurbanbirds.org/?p=4515"],
+  S32: ["Toronto Wildlife Centre: Shore bird", "https://www.torontowildlifecentre.com/wildlife-emergency-rescue-hotline/how-to-help-orphaned-baby-wild-animals/how-to-help-baby-birds/shore-bird/"],
+  S33: ["Le Nichoir: Ducklings FAQ", "https://lenichoir.org/?p=11057"],
+};
+
+
+// ============================================================
+// 詳細視窗
+// ============================================================
 const detail = document.getElementById("detail");
+const $ = (id) => document.getElementById(id);
 
-// 救傷提示：目前先放通用建議，之後依「目」換成不同內容
-const DEFAULT_HELP =
-  "先觀察，不要急著撿起來。羽毛已長齊的幼鳥落地通常是在學飛，親鳥多半就在附近。" +
-  "若明顯受傷或有立即危險，可用紙箱輕輕裝起放在安靜陰暗處，不要餵食或餵水，並盡快聯絡救傷單位。";
+// 救傷區塊的狀態：每次打開新的鳥都重設
+const help = {
+  bird: null,
+  group: null,
+  pick: null,          // null / "chick" / "fledgling" / "injured"
+  idOpen: false,       // 詳細特徵
+  phonesOpen: false,   // 其他電話
+  sourcesOpen: false,  // 資料來源
+};
 
+// 小工具：建立一個元素並填文字（用 textContent，資料不會被當成 HTML）
+function el(tag, className, text) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text !== undefined) node.textContent = text;
+  return node;
+}
+
+// 小工具：把一串文字變成 <ul>
+function listOf(items) {
+  const ul = el("ul");
+  items.forEach((item) => ul.append(el("li", "", item)));
+  return ul;
+}
+
+
+// ----- 只做一次：依 SITUATIONS 產生卡片、「分不出來時」和對照表 -----
+function buildStaticHelp() {
+  const cards = $("pick-cards");
+  SITUATION_ORDER.forEach((key) => {
+    const s = SITUATIONS[key];
+    const btn = el("button", "pick-card");
+    btn.type = "button";
+    btn.dataset.pick = key;
+    btn.setAttribute("aria-pressed", "false");
+    btn.setAttribute("aria-controls", "advice");
+    btn.append(el("span", "pick-card-name", s.name), el("span", "pick-card-short", s.short));
+    cards.append(btn);
+  });
+
+  $("pick-hint").textContent = SITUATIONS.hint.unsure;
+
+  const { columns, rows } = SITUATIONS.hint.table;
+  const table = el("table", "id-table");
+  const headRow = el("tr");
+  headRow.append(el("th", "", "特徵"));
+  columns.forEach((c) => headRow.append(el("th", "", c)));
+  headRow.querySelectorAll("th").forEach((th) => th.setAttribute("scope", "col"));
+  const thead = el("thead");
+  thead.append(headRow);
+  const tbody = el("tbody");
+  rows.forEach(([label, ...cells]) => {
+    const tr = el("tr");
+    const th = el("th", "", label);
+    th.setAttribute("scope", "row");
+    tr.append(th);
+    cells.forEach((c) => tr.append(el("td", "", c)));
+    tbody.append(tr);
+  });
+  table.append(thead, tbody);
+  $("id-table").append(table);
+}
+
+
+// ----- 每次開視窗：類群標籤、黃色框、資料來源 -----
+function renderGroup() {
+  const { bird, group } = help;
+  const tag = $("group-tag");
+  const box = $("group-box");
+
+  if (!group) {
+    tag.hidden = true;
+    box.hidden = true;
+    return;
+  }
+
+  tag.textContent = group.label;
+  tag.hidden = false;
+
+  $("group-box-title").textContent = group.title(bird);
+  const ul = $("group-box-list");
+  ul.replaceChildren();
+  group.items
+    .filter((item) => !item.onlyIf || item.onlyIf(bird))
+    .forEach((item) => {
+      const li = el("li");
+      if (item.bold) li.append(el("strong", "", item.bold));
+      li.append(item.text);
+      ul.append(li);
+    });
+  box.hidden = false;
+}
+
+function renderSources() {
+  // 第一層用到的來源 ＋ 這隻鳥的類群用到的來源，去掉重複
+  const ids = [
+    ...SITUATIONS.hint.sources,
+    ...SITUATION_ORDER.flatMap((k) => SITUATIONS[k].sources),
+    "S19", "S24", "S25",                       // 聯絡列的電話
+    ...(help.group ? help.group.sources : []),
+  ];
+  const unique = [...new Set(ids)].filter((id) => SOURCES[id]);
+  // 台灣來源在前、國外在後（照 SOURCES 裡的順序）
+  const ordered = Object.keys(SOURCES).filter((id) => unique.includes(id));
+
+  const ul = $("sources");
+  ul.replaceChildren();
+  ordered.forEach((id) => {
+    const [name, url] = SOURCES[id];
+    const a = el("a", "", name);
+    a.href = url;
+    a.target = "_blank";
+    a.rel = "noopener";
+    const li = el("li");
+    li.append(a);
+    ul.append(li);
+  });
+}
+
+
+// ----- 選中卡片的做法 -----
+function renderAdvice() {
+  const advice = $("advice");
+  advice.replaceChildren();
+
+  // 卡片的 aria-pressed 跟著狀態更新
+  document.querySelectorAll(".pick-card").forEach((btn) => {
+    btn.setAttribute("aria-pressed", String(btn.dataset.pick === help.pick));
+  });
+
+  if (!help.pick) {
+    advice.hidden = true;     // 沒選時不顯示、不預留空間
+    return;
+  }
+
+  const s = SITUATIONS[help.pick];
+  advice.append(el("p", "advice-lead", s.lead));
+
+  if (help.pick === "injured") {
+    let note = s.note;
+    const extra = help.group && help.group.adultNote;
+    if (extra && extra.onlyIf(help.bird)) note += extra.text;
+    advice.append(el("p", "advice-note", note));
+
+    const cols = el("div", "advice-cols");
+    s.columns.forEach((col) => {
+      const box = el("div");
+      box.append(el("p", "advice-col-title", col.title), listOf(col.items));
+      cols.append(box);
+    });
+    advice.append(cols, el("p", "advice-footer", s.footer));
+  } else {
+    advice.append(listOf(s.items));
+  }
+
+  advice.hidden = false;
+}
+
+
+// ----- 三個展開鈕：詳細特徵、其他電話、資料來源 -----
+function renderToggles() {
+  const idBtn = $("id-toggle");
+  idBtn.setAttribute("aria-expanded", String(help.idOpen));
+  $("id-toggle-label").textContent = help.idOpen ? "收起詳細特徵" : "怎麼分辨？看詳細特徵";
+  $("id-table").hidden = !help.idOpen;
+
+  const phonesBtn = $("phones-toggle");
+  phonesBtn.setAttribute("aria-expanded", String(help.phonesOpen));
+  phonesBtn.textContent = help.phonesOpen ? "收起" : "其他電話";
+  $("phones").hidden = !help.phonesOpen;
+
+  const srcBtn = $("sources-toggle");
+  srcBtn.setAttribute("aria-expanded", String(help.sourcesOpen));
+  srcBtn.textContent = help.sourcesOpen ? "收起資料來源" : "查看資料來源";
+  $("sources").hidden = !help.sourcesOpen;
+}
+
+
+// ----- 打開詳細視窗 -----
 function openDetail(bird) {
   // 照片換成大尺寸
-  document.getElementById("detail-photo").src = bird.photo.replace("medium", "large");
-  document.getElementById("detail-photo").alt = bird.name;
+  $("detail-photo").src = bird.photo.replace("medium", "large");
+  $("detail-photo").alt = bird.name;
   // 用 textContent 填文字，瀏覽器不會把它當 HTML，所以不用 escape
-  document.getElementById("detail-name").textContent   = bird.name;
-  document.getElementById("detail-sci").textContent    = bird.sci;
-  document.getElementById("detail-taxon").textContent  = [bird.order, bird.family].filter(Boolean).join(" › ") || "—";
-  document.getElementById("detail-date").textContent   = bird.date;
-  document.getElementById("detail-place").textContent  = bird.place || "—";
-  document.getElementById("detail-credit").textContent = `${bird.credit}（${bird.license}）`;
-  document.getElementById("detail-link").href          = bird.url;
-  document.getElementById("detail-help").textContent   = DEFAULT_HELP;
+  $("detail-name").textContent   = bird.name;
+  $("detail-sci").textContent    = bird.sci;
+  $("detail-taxon").textContent  = [bird.order, bird.family].filter(Boolean).join(" › ") || "—";
+  $("detail-date").textContent   = bird.date;
+  $("detail-place").textContent  = bird.place || "—";
+  $("detail-credit").textContent = `${bird.credit}（${bird.license}）`;
+  $("detail-link").href          = bird.url;
+
+  // 救傷區塊：重設狀態後重畫
+  help.bird = bird;
+  help.group = findGroup(bird);
+  help.pick = null;
+  help.idOpen = false;
+  help.phonesOpen = false;
+  help.sourcesOpen = false;
+  renderGroup();
+  renderSources();
+  renderAdvice();
+  renderToggles();
+
   detail.showModal();   // 打開視窗，背景會變暗
+  detail.scrollTop = 0; // 每次從最上面開始看
 }
+
+
+// ----- 救傷區塊的點擊 -----
+$("pick-cards").addEventListener("click", (event) => {
+  const btn = event.target.closest(".pick-card");
+  if (!btn) return;
+  // 再點同一張就收起；點別張就換過去（一次只開一段）
+  help.pick = help.pick === btn.dataset.pick ? null : btn.dataset.pick;
+  renderAdvice();
+});
+
+$("id-toggle").addEventListener("click", () => {
+  help.idOpen = !help.idOpen;
+  renderToggles();
+});
+
+$("phones-toggle").addEventListener("click", () => {
+  help.phonesOpen = !help.phonesOpen;
+  renderToggles();
+});
+
+$("sources-toggle").addEventListener("click", () => {
+  help.sourcesOpen = !help.sourcesOpen;
+  renderToggles();
+});
+
 
 // 點卡片：找出被點的是哪一筆，打開它
 grid.addEventListener("click", (event) => {
@@ -84,7 +503,7 @@ grid.addEventListener("keydown", (event) => {
 });
 
 // 關閉視窗：按 × 或點視窗外面的暗色區域（按 Esc 瀏覽器會自動關）
-document.getElementById("close").addEventListener("click", () => detail.close());
+$("close").addEventListener("click", () => detail.close());
 detail.addEventListener("click", (event) => {
   if (event.target === detail) detail.close();
 });
@@ -127,4 +546,5 @@ summaryText.textContent =
   `${BIRDS.length} 筆觀察紀錄 · ${species} 種鳥 · ${dates[0]} 至 ${dates[dates.length - 1]}`;
 
 // 一打開網頁就先畫一次
+buildStaticHelp();
 render();
