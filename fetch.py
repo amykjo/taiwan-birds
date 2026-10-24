@@ -11,7 +11,7 @@ import config
 API = "https://api.inaturalist.org/v1"
 HEADERS = {"User-Agent": "taiwan-bird-class-project"}
 
-PAGES = 2        # 抓幾頁
+PAGES = 10       # 抓幾頁
 PER_PAGE = 200   # 每頁幾筆（API 上限 200）→ 2 頁 = 最多 400 筆
 
 # 抓取條件
