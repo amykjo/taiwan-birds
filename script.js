@@ -27,15 +27,23 @@ function escapeHTML(text) {
 
 // 把一筆鳥的資料變成一張卡片的 HTML
 // data-id 記住這張卡片是哪一筆，點的時候才知道要打開誰
+// 標籤：屬於第二層類群的鳥顯示黃色類群名（例如「鷺鷥類」），其他的顯示目
 function cardHTML(bird) {
   const place = [bird.date, bird.county].filter(Boolean).join(" · ");
+  const group = findGroup(bird);
+  let tag = "";
+  if (group) {
+    tag = `<span class="tag tag-group">${escapeHTML(group.label)}</span>`;
+  } else if (bird.order) {
+    tag = `<span class="tag">${escapeHTML(bird.order)}</span>`;
+  }
   return `
     <article class="card" data-id="${bird.id}" tabindex="0">
       <img src="${escapeHTML(bird.photo)}" alt="${escapeHTML(bird.name)}" loading="lazy">
       <div class="card-body">
-        <h2>${escapeHTML(bird.name)}</h2>
+        <h3>${escapeHTML(bird.name)}</h3>
         <p class="sci">${escapeHTML(bird.sci)}</p>
-        ${bird.order ? `<span class="tag">${escapeHTML(bird.order)}</span>` : ""}
+        ${tag}
         <p class="meta">${escapeHTML(place)}</p>
         <p class="credit">${escapeHTML(bird.credit)}</p>
       </div>
@@ -248,22 +256,11 @@ const SOURCES = {
 
 
 // ============================================================
-// 詳細視窗
+// 小工具
 // ============================================================
-const detail = document.getElementById("detail");
 const $ = (id) => document.getElementById(id);
 
-// 救傷區塊的狀態：每次打開新的鳥都重設
-const help = {
-  bird: null,
-  group: null,
-  pick: null,          // null / "chick" / "fledgling" / "injured"
-  idOpen: false,       // 詳細特徵
-  phonesOpen: false,   // 其他電話
-  sourcesOpen: false,  // 資料來源
-};
-
-// 小工具：建立一個元素並填文字（用 textContent，資料不會被當成 HTML）
+// 建立一個元素並填文字（用 textContent，資料不會被當成 HTML）
 function el(tag, className, text) {
   const node = document.createElement(tag);
   if (className) node.className = className;
@@ -271,36 +268,74 @@ function el(tag, className, text) {
   return node;
 }
 
-// 小工具：把一串文字變成 <ul>
+// 把一串文字變成 <ul>
 function listOf(items) {
   const ul = el("ul");
   items.forEach((item) => ul.append(el("li", "", item)));
   return ul;
 }
 
+// 展開鈕：按一下切換 aria-expanded、按鈕文字、目標區塊的 hidden
+function setupToggle(button, target, openLabel, closedLabel, labelNode) {
+  const labelEl = labelNode || button;
+  function set(open) {
+    button.setAttribute("aria-expanded", String(open));
+    labelEl.textContent = open ? openLabel : closedLabel;
+    target.hidden = !open;
+  }
+  button.addEventListener("click", () => set(button.getAttribute("aria-expanded") !== "true"));
+  set(false);
+  return set;   // 回傳 set，需要時可以從外面收起
+}
 
-// ----- 只做一次：依 SITUATIONS 產生卡片、「分不出來時」和對照表 -----
-function buildStaticHelp() {
-  const cards = $("pick-cards");
+
+// ============================================================
+// 「先看牠是哪一種」：三張卡片＋特徵對照表＋做法
+// 首頁和詳細視窗各建一份，內容都讀同一個 SITUATIONS
+// ============================================================
+function createPicker(root, { prefix, headingTag }) {
+  // ----- 標題列與「看詳細特徵」按鈕 -----
+  const head = el("div", "pick-head");
+  const titleBox = el("div");
+  const title = el(headingTag, "pick-title", "先看牠是哪一種");
+  title.id = `${prefix}-pick-title`;
+  titleBox.append(title, el("p", "pick-sub", "點選卡片看做法"));
+
+  const idBtn = el("button", "id-toggle");
+  idBtn.type = "button";
+  idBtn.setAttribute("aria-controls", `${prefix}-id-table`);
+  idBtn.innerHTML =
+    '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>';
+  const idLabel = el("span");
+  idBtn.append(idLabel);
+  head.append(titleBox, idBtn);
+
+  // ----- 三張卡片（切換鈕）-----
+  const cards = el("div", "pick-cards");
   SITUATION_ORDER.forEach((key) => {
     const s = SITUATIONS[key];
     const btn = el("button", "pick-card");
     btn.type = "button";
     btn.dataset.pick = key;
     btn.setAttribute("aria-pressed", "false");
-    btn.setAttribute("aria-controls", "advice");
+    btn.setAttribute("aria-controls", `${prefix}-advice`);
     btn.append(el("span", "pick-card-name", s.name), el("span", "pick-card-short", s.short));
     cards.append(btn);
   });
 
-  $("pick-hint").textContent = SITUATIONS.hint.unsure;
+  const hint = el("p", "pick-hint", SITUATIONS.hint.unsure);
 
+  // ----- 詳細特徵對照表 -----
+  const tableWrap = el("div", "id-table-wrap");
+  tableWrap.id = `${prefix}-id-table`;
   const { columns, rows } = SITUATIONS.hint.table;
   const table = el("table", "id-table");
   const headRow = el("tr");
-  headRow.append(el("th", "", "特徵"));
-  columns.forEach((c) => headRow.append(el("th", "", c)));
-  headRow.querySelectorAll("th").forEach((th) => th.setAttribute("scope", "col"));
+  ["特徵", ...columns].forEach((c) => {
+    const th = el("th", "", c);
+    th.setAttribute("scope", "col");
+    headRow.append(th);
+  });
   const thead = el("thead");
   thead.append(headRow);
   const tbody = el("tbody");
@@ -313,22 +348,100 @@ function buildStaticHelp() {
     tbody.append(tr);
   });
   table.append(thead, tbody);
-  $("id-table").append(table);
+  tableWrap.append(table);
+
+  // ----- 做法區 -----
+  const advice = el("div", "advice");
+  advice.id = `${prefix}-advice`;
+
+  root.classList.add("picker");
+  root.setAttribute("aria-labelledby", title.id);
+  root.append(head, cards, hint, tableWrap, advice);
+
+  // ----- 狀態與畫面 -----
+  let pick = null;   // null / "chick" / "fledgling" / "injured"
+  let bird = null;   // 詳細視窗裡的那隻鳥（首頁沒有）
+  let group = null;
+
+  function renderAdvice() {
+    cards.querySelectorAll(".pick-card").forEach((btn) => {
+      btn.setAttribute("aria-pressed", String(btn.dataset.pick === pick));
+    });
+    advice.replaceChildren();
+    if (!pick) {
+      advice.hidden = true;     // 沒選時不顯示、不預留空間
+      return;
+    }
+    const s = SITUATIONS[pick];
+    advice.append(el("p", "advice-lead", s.lead));
+
+    if (pick === "injured") {
+      let note = s.note;
+      const extra = group && group.adultNote;
+      if (bird && extra && extra.onlyIf(bird)) note += extra.text;
+      advice.append(el("p", "advice-note", note));
+
+      const cols = el("div", "advice-cols");
+      s.columns.forEach((col) => {
+        const box = el("div");
+        box.append(el("p", "advice-col-title", col.title), listOf(col.items));
+        cols.append(box);
+      });
+      advice.append(cols, el("p", "advice-footer", s.footer));
+    } else {
+      advice.append(listOf(s.items));
+    }
+    advice.hidden = false;
+  }
+
+  // 再點同一張就收起；點別張就換過去（一次只開一段）
+  cards.addEventListener("click", (event) => {
+    const btn = event.target.closest(".pick-card");
+    if (!btn) return;
+    pick = pick === btn.dataset.pick ? null : btn.dataset.pick;
+    renderAdvice();
+  });
+
+  const setTable = setupToggle(idBtn, tableWrap, "收起詳細特徵", "怎麼分辨？看詳細特徵", idLabel);
+  renderAdvice();
+
+  // 詳細視窗每次換一隻鳥時呼叫：重設狀態
+  return {
+    reset(newBird, newGroup) {
+      bird = newBird || null;
+      group = newGroup || null;
+      pick = null;
+      setTable(false);
+      renderAdvice();
+    },
+  };
 }
 
 
-// ----- 每次開視窗：類群標籤、黃色框、資料來源 -----
-function renderGroup() {
-  const { bird, group } = help;
+// ============================================================
+// 首頁
+// ============================================================
+createPicker($("home-picker"), { prefix: "home", headingTag: "h2" });
+setupToggle($("hero-phones-toggle"), $("hero-phones"), "收起", "其他電話");
+
+
+// ============================================================
+// 詳細視窗
+// ============================================================
+const detail = $("detail");
+const detailPicker = createPicker($("detail-picker"), { prefix: "detail", headingTag: "p" });
+const setPhones = setupToggle($("phones-toggle"), $("phones"), "收起", "其他電話");
+const setSources = setupToggle($("sources-toggle"), $("sources"), "收起資料來源", "查看資料來源");
+
+// 類群標籤與黃色框
+function renderGroup(bird, group) {
   const tag = $("group-tag");
   const box = $("group-box");
-
   if (!group) {
     tag.hidden = true;
     box.hidden = true;
     return;
   }
-
   tag.textContent = group.label;
   tag.hidden = false;
 
@@ -346,17 +459,16 @@ function renderGroup() {
   box.hidden = false;
 }
 
-function renderSources() {
-  // 第一層用到的來源 ＋ 這隻鳥的類群用到的來源，去掉重複
+// 資料來源：第一層＋聯絡列＋這隻鳥的類群用到的，去掉重複
+function renderSources(group) {
   const ids = [
     ...SITUATIONS.hint.sources,
     ...SITUATION_ORDER.flatMap((k) => SITUATIONS[k].sources),
-    "S19", "S24", "S25",                       // 聯絡列的電話
-    ...(help.group ? help.group.sources : []),
+    "S19", "S24", "S25",
+    ...(group ? group.sources : []),
   ];
-  const unique = [...new Set(ids)].filter((id) => SOURCES[id]);
-  // 台灣來源在前、國外在後（照 SOURCES 裡的順序）
-  const ordered = Object.keys(SOURCES).filter((id) => unique.includes(id));
+  const unique = new Set(ids);
+  const ordered = Object.keys(SOURCES).filter((id) => unique.has(id));   // 台灣在前、國外在後
 
   const ul = $("sources");
   ul.replaceChildren();
@@ -372,66 +484,6 @@ function renderSources() {
   });
 }
 
-
-// ----- 選中卡片的做法 -----
-function renderAdvice() {
-  const advice = $("advice");
-  advice.replaceChildren();
-
-  // 卡片的 aria-pressed 跟著狀態更新
-  document.querySelectorAll(".pick-card").forEach((btn) => {
-    btn.setAttribute("aria-pressed", String(btn.dataset.pick === help.pick));
-  });
-
-  if (!help.pick) {
-    advice.hidden = true;     // 沒選時不顯示、不預留空間
-    return;
-  }
-
-  const s = SITUATIONS[help.pick];
-  advice.append(el("p", "advice-lead", s.lead));
-
-  if (help.pick === "injured") {
-    let note = s.note;
-    const extra = help.group && help.group.adultNote;
-    if (extra && extra.onlyIf(help.bird)) note += extra.text;
-    advice.append(el("p", "advice-note", note));
-
-    const cols = el("div", "advice-cols");
-    s.columns.forEach((col) => {
-      const box = el("div");
-      box.append(el("p", "advice-col-title", col.title), listOf(col.items));
-      cols.append(box);
-    });
-    advice.append(cols, el("p", "advice-footer", s.footer));
-  } else {
-    advice.append(listOf(s.items));
-  }
-
-  advice.hidden = false;
-}
-
-
-// ----- 三個展開鈕：詳細特徵、其他電話、資料來源 -----
-function renderToggles() {
-  const idBtn = $("id-toggle");
-  idBtn.setAttribute("aria-expanded", String(help.idOpen));
-  $("id-toggle-label").textContent = help.idOpen ? "收起詳細特徵" : "怎麼分辨？看詳細特徵";
-  $("id-table").hidden = !help.idOpen;
-
-  const phonesBtn = $("phones-toggle");
-  phonesBtn.setAttribute("aria-expanded", String(help.phonesOpen));
-  phonesBtn.textContent = help.phonesOpen ? "收起" : "其他電話";
-  $("phones").hidden = !help.phonesOpen;
-
-  const srcBtn = $("sources-toggle");
-  srcBtn.setAttribute("aria-expanded", String(help.sourcesOpen));
-  srcBtn.textContent = help.sourcesOpen ? "收起資料來源" : "查看資料來源";
-  $("sources").hidden = !help.sourcesOpen;
-}
-
-
-// ----- 打開詳細視窗 -----
 function openDetail(bird) {
   // 照片換成大尺寸
   $("detail-photo").src = bird.photo.replace("medium", "large");
@@ -445,47 +497,17 @@ function openDetail(bird) {
   $("detail-credit").textContent = `${bird.credit}（${bird.license}）`;
   $("detail-link").href          = bird.url;
 
-  // 救傷區塊：重設狀態後重畫
-  help.bird = bird;
-  help.group = findGroup(bird);
-  help.pick = null;
-  help.idOpen = false;
-  help.phonesOpen = false;
-  help.sourcesOpen = false;
-  renderGroup();
-  renderSources();
-  renderAdvice();
-  renderToggles();
+  // 救傷區塊：依這隻鳥的類群重畫，展開的東西都收起來
+  const group = findGroup(bird);
+  renderGroup(bird, group);
+  renderSources(group);
+  detailPicker.reset(bird, group);
+  setPhones(false);
+  setSources(false);
 
   detail.showModal();   // 打開視窗，背景會變暗
   detail.scrollTop = 0; // 每次從最上面開始看
 }
-
-
-// ----- 救傷區塊的點擊 -----
-$("pick-cards").addEventListener("click", (event) => {
-  const btn = event.target.closest(".pick-card");
-  if (!btn) return;
-  // 再點同一張就收起；點別張就換過去（一次只開一段）
-  help.pick = help.pick === btn.dataset.pick ? null : btn.dataset.pick;
-  renderAdvice();
-});
-
-$("id-toggle").addEventListener("click", () => {
-  help.idOpen = !help.idOpen;
-  renderToggles();
-});
-
-$("phones-toggle").addEventListener("click", () => {
-  help.phonesOpen = !help.phonesOpen;
-  renderToggles();
-});
-
-$("sources-toggle").addEventListener("click", () => {
-  help.sourcesOpen = !help.sourcesOpen;
-  renderToggles();
-});
-
 
 // 點卡片：找出被點的是哪一筆，打開它
 grid.addEventListener("click", (event) => {
@@ -509,6 +531,10 @@ detail.addEventListener("click", (event) => {
 });
 
 
+// ============================================================
+// 照片卡片列表
+// ============================================================
+
 // 依照目前狀態重新畫出卡片
 function render() {
   const visible = filtered.slice(0, shown);           // 只取前 shown 筆
@@ -518,7 +544,6 @@ function render() {
   emptyText.hidden  = filtered.length > 0;            // 有結果就藏起「找不到」
   moreButton.hidden = shown >= filtered.length;       // 全部顯示完就藏起按鈕
 }
-
 
 // 搜尋：每次輸入文字就重新篩選
 searchInput.addEventListener("input", () => {
@@ -531,20 +556,17 @@ searchInput.addEventListener("input", () => {
   render();
 });
 
-
 // 「顯示更多」：多顯示一頁
 moreButton.addEventListener("click", () => {
   shown += PAGE_SIZE;
   render();
 });
 
-
-// 標題下方的資料概況：幾筆、幾種鳥、日期範圍
+// 資料概況：幾筆、幾種鳥、日期範圍
 const species = new Set(BIRDS.map((b) => b.name)).size;
 const dates = BIRDS.map((b) => b.date).sort();
 summaryText.textContent =
   `${BIRDS.length} 筆觀察紀錄 · ${species} 種鳥 · ${dates[0]} 至 ${dates[dates.length - 1]}`;
 
 // 一打開網頁就先畫一次
-buildStaticHelp();
 render();

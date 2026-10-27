@@ -4,48 +4,73 @@
   <meta charset="UTF-8">
   <!-- 讓手機上也能正常縮放 -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>台灣鳥類觀察</title>
+  <title>撿到鳥怎麼辦？台灣鳥類觀察</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-  <!-- 最上方標題區 -->
-  <header class="header">
+  <!-- 最上方：救傷入口與電話 -->
+  <header class="hero">
     <div class="container">
-      <h1>台灣鳥類觀察</h1>
-      <p class="subtitle">最近在台灣被拍到的鳥，資料來自 iNaturalist</p>
-      <p class="summary" id="summary"></p>
-
-      <!-- 搜尋框：輸入時 script.js 會即時篩選卡片 -->
-      <input
-        type="search"
-        id="search"
-        class="search"
-        placeholder="搜尋鳥名、學名或縣市，例如：白頭翁、臺北市"
-        autocomplete="off"
-      >
+      <p class="hero-brand">台灣鳥類觀察</p>
+      <h1>撿到鳥怎麼辦？</h1>
+      <p class="hero-lead">先分辨牠是雛鳥、幼鳥，還是受傷或生病，再照下面的做法處理。不知道是什麼鳥，可以往下從近期觀察紀錄找找看。</p>
+      <div class="hero-actions">
+        <a class="call-btn" href="tel:0800000930">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"></path></svg>
+          撥 0800-000-930
+        </a>
+        <span class="hero-note">林保署 24 小時、免付費</span>
+        <button class="link-btn hero-link" id="hero-phones-toggle" type="button" aria-expanded="false" aria-controls="hero-phones">其他電話</button>
+      </div>
+      <p class="hero-phones" id="hero-phones" hidden>
+        <span><a href="tel:1999">1999</a> 縣市專線</span>
+        <span><a href="tel:1959">1959</a> 動保專線</span>
+        <a href="https://www.bird.org.tw/basicpage/117" target="_blank" rel="noopener">查各縣市救傷單位 ↗</a>
+      </p>
     </div>
   </header>
 
   <main class="container">
-    <!-- 顯示目前有幾筆符合搜尋 -->
-    <p class="count" id="count"></p>
+    <!-- 先看牠是哪一種：卡片、特徵表、做法都由 script.js 依 SITUATIONS 產生 -->
+    <section class="home-rescue" id="home-picker"></section>
 
-    <!-- 卡片會由 script.js 放進這裡 -->
-    <div class="grid" id="grid"></div>
+    <!-- 找出是什麼鳥 -->
+    <section class="finder" aria-labelledby="finder-title">
+      <h2 id="finder-title">不知道是什麼鳥？從近期觀察找找看</h2>
+      <p class="summary" id="summary"></p>
+      <p class="finder-hint">有黃色標籤的鳥有特別注意事項，點照片查看。</p>
 
-    <!-- 搜尋不到時顯示 -->
-    <p class="empty" id="empty" hidden>找不到符合的鳥，換個關鍵字試試看。</p>
+      <!-- 搜尋框：輸入時 script.js 會即時篩選卡片 -->
+      <label class="search-label" for="search">搜尋</label>
+      <input
+        type="search"
+        id="search"
+        class="search"
+        placeholder="鳥名、學名或縣市，例如：白頭翁、臺南市"
+        autocomplete="off"
+      >
 
-    <!-- 一次只顯示一部分，按了再多顯示，避免一次載入太多照片 -->
-    <div class="more-wrap">
-      <button class="more" id="more">顯示更多</button>
-    </div>
+      <!-- 顯示目前有幾筆符合搜尋 -->
+      <p class="count" id="count"></p>
+
+      <!-- 卡片會由 script.js 放進這裡 -->
+      <div class="grid" id="grid"></div>
+
+      <!-- 搜尋不到時顯示 -->
+      <p class="empty" id="empty" hidden>找不到符合的鳥，換個關鍵字試試看。</p>
+
+      <!-- 一次只顯示一部分，按了再多顯示，避免一次載入太多照片 -->
+      <div class="more-wrap">
+        <button class="more" id="more">顯示更多</button>
+      </div>
+    </section>
   </main>
 
   <footer class="footer">
     <div class="container">
-      <p>資料來源：iNaturalist 研究級觀察紀錄，照片版權屬各攝影者，依其 CC 授權標示。</p>
+      <p>救傷內容為一般性整理，請以專業救傷單位指示為準。</p>
+      <p>觀察資料來源：iNaturalist 研究級觀察紀錄，照片版權屬各攝影者，依其 CC 授權標示。</p>
       <p>數字代表「觀察紀錄數」，會受到拍攝者分布影響，不等於野外族群數量。</p>
     </div>
   </footer>
@@ -80,27 +105,8 @@
           <ul id="group-box-list"></ul>
         </div>
 
-        <!-- 先看牠是哪一種 -->
-        <div class="pick-head">
-          <div>
-            <p class="pick-title">先看牠是哪一種</p>
-            <p class="pick-sub">點選卡片看做法</p>
-          </div>
-          <button class="id-toggle" id="id-toggle" type="button" aria-expanded="false" aria-controls="id-table">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
-            <span id="id-toggle-label">怎麼分辨？看詳細特徵</span>
-          </button>
-        </div>
-
-        <!-- 三張卡片（切換鈕），由 script.js 依 SITUATIONS 產生 -->
-        <div class="pick-cards" id="pick-cards"></div>
-        <p class="pick-hint" id="pick-hint"></p>
-
-        <!-- 詳細特徵對照表，由 script.js 依 SITUATIONS 產生 -->
-        <div class="id-table-wrap" id="id-table" hidden></div>
-
-        <!-- 選中卡片的做法：沒選時隱藏、不佔空間 -->
-        <div class="advice" id="advice" hidden></div>
+        <!-- 先看牠是哪一種：跟首頁同一套，由 script.js 產生 -->
+        <div id="detail-picker"></div>
 
         <!-- 聯絡列 -->
         <div class="contact">
