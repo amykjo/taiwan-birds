@@ -105,7 +105,12 @@
           <ul id="group-box-list"></ul>
         </div>
 
-        <!-- 先看牠是哪一種：跟首頁同一套，由 script.js 產生 -->
+        <!-- 一般做法：跟首頁同一套，由 script.js 產生 -->
+        <!-- 有黃色框的鳥預設收起（突顯黃色框）；沒有黃色框的鳥預設展開 -->
+        <button class="general-toggle" id="general-toggle" type="button" aria-expanded="false" aria-controls="detail-picker">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg>
+          <span id="general-toggle-label">看一般做法（雛鳥、幼鳥、受傷或生病）</span>
+        </button>
         <div id="detail-picker"></div>
 
         <!-- 聯絡列 -->

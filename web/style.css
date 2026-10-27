@@ -320,6 +320,28 @@ body {
 }
 .group-box-title svg { flex-shrink: 0; }
 
+/* 詳細視窗：「看一般做法」按鈕，展開時箭頭轉向下 */
+.general-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 14px;
+  font: inherit;
+  font-size: 0.92rem;
+  font-weight: 500;
+  text-align: left;
+  color: var(--green);
+  background: var(--green-light);
+  border: 1px solid #cfe0d4;
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+.general-toggle:hover { border-color: var(--green); }
+.general-toggle svg { flex-shrink: 0; transition: transform 0.15s; }
+.general-toggle[aria-expanded="true"] svg { transform: rotate(90deg); }
+
 /* 先看牠是哪一種 */
 .pick-head {
   display: flex;

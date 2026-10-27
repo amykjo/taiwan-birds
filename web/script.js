@@ -430,6 +430,11 @@ setupToggle($("hero-phones-toggle"), $("hero-phones"), "收起", "其他電話")
 // ============================================================
 const detail = $("detail");
 const detailPicker = createPicker($("detail-picker"), { prefix: "detail", headingTag: "p" });
+const setGeneral = setupToggle(
+  $("general-toggle"), $("detail-picker"),
+  "收起一般做法", "看一般做法（雛鳥、幼鳥、受傷或生病）",
+  $("general-toggle-label")
+);
 const setPhones = setupToggle($("phones-toggle"), $("phones"), "收起", "其他電話");
 const setSources = setupToggle($("sources-toggle"), $("sources"), "收起資料來源", "查看資料來源");
 
@@ -502,6 +507,7 @@ function openDetail(bird) {
   renderGroup(bird, group);
   renderSources(group);
   detailPicker.reset(bird, group);
+  setGeneral(!group);   // 有黃色框就先收起一般做法；沒有就直接展開
   setPhones(false);
   setSources(false);
 
